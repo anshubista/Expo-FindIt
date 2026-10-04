@@ -20,7 +20,7 @@ export default function PostItemScreen() {
   const [location, setLocation] = useState("");
   const [date, setDate] = useState("");
 
-  const handleSubmit = () => {
+  const handleSubmit =  async () => {
     if (
       !itemName.trim() ||
       !category.trim() ||

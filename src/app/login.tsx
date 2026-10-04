@@ -1,63 +1,95 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 import { useState } from "react";
 import {
+  Alert,
   StyleSheet,
   Text,
-  View,
   TextInput,
   TouchableOpacity,
-  Alert,
+  View,
 } from "react-native";
-import { router } from "expo-router";
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState("");
+  const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = () => {
-    if (email === "" || password === "") {
-      Alert.alert("Error", "Please enter email and password");
+  const handleLogin = async () => {
+    // Check empty fields
+    if (userId.trim() === "" || password === "") {
+      Alert.alert("Error", "Please enter User ID and Password");
       return;
     }
 
-    Alert.alert("Success", "Login successful");
+    try {
+      // Get saved users
+      const savedUsers = await AsyncStorage.getItem("users");
 
-    router.replace("/");
+      // No users found
+      if (!savedUsers) {
+        Alert.alert("Login Failed", "No account found. Please sign up first.");
+        return;
+      }
+
+      // Convert saved JSON into array
+      const users = JSON.parse(savedUsers);
+
+      // Find the user
+      const user = users.find(
+        (user: any) =>
+          user.userId.toLowerCase() === userId.trim().toLowerCase() &&
+          user.password === password,
+      );
+
+      // User not found
+      if (!user) {
+        Alert.alert("Login Failed", "Invalid User ID or Password");
+        return;
+      }
+
+      // Save login status
+      await AsyncStorage.setItem("isLoggedIn", "true");
+
+      // Save current logged-in user
+      await AsyncStorage.setItem("currentUser", JSON.stringify(user));
+
+      // Login successful
+      Alert.alert("Success", "Login successful", [
+        {
+          text: "OK",
+          onPress: () => router.replace("/"),
+        },
+      ]);
+    } catch (error) {
+      console.log("Login error:", error);
+
+      Alert.alert("Error", "Something went wrong while logging in.");
+    }
   };
 
   return (
     <View style={styles.container}>
+      {/* Logo */}
+      <Text style={styles.logo}>🔎 FindIt</Text>
 
       {/* Title */}
-      <Text style={styles.logo}>
-        🔎 FindIt
-      </Text>
+      <Text style={styles.title}>Welcome Back!</Text>
 
-      <Text style={styles.title}>
-        Welcome Back!
-      </Text>
+      <Text style={styles.subtitle}>Login to continue</Text>
 
-      <Text style={styles.subtitle}>
-        Login to continue
-      </Text>
-
-      {/* Email */}
-      <Text style={styles.label}>
-        Email
-      </Text>
+      {/* User ID */}
+      <Text style={styles.label}>User ID</Text>
 
       <TextInput
         style={styles.input}
-        placeholder="Enter your email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
+        placeholder="Enter your User ID"
+        value={userId}
+        onChangeText={setUserId}
         autoCapitalize="none"
       />
 
       {/* Password */}
-      <Text style={styles.label}>
-        Password
-      </Text>
+      <Text style={styles.label}>Password</Text>
 
       <TextInput
         style={styles.input}
@@ -68,20 +100,17 @@ export default function LoginScreen() {
       />
 
       {/* Login Button */}
-      <TouchableOpacity
-        style={styles.loginButton}
-        onPress={handleLogin}
-      >
-        <Text style={styles.loginButtonText}>
-          Login
-        </Text>
+      <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+        <Text style={styles.loginButtonText}>Login</Text>
       </TouchableOpacity>
 
-      {/* Register */}
-      <Text style={styles.registerText}>
-        Don't have an account? Register
-      </Text>
-
+      {/* Sign Up */}
+      <TouchableOpacity
+        style={styles.signupButton}
+        onPress={() => router.push("/signup")}
+      >
+        <Text style={styles.signupButtonText}>Create New Account</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -143,20 +172,18 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-  backButton: {
-    marginTop: 20,
-    padding: 12,
+  signupButton: {
+    borderWidth: 1,
+    borderColor: "#4CAF50",
+    padding: 15,
+    borderRadius: 12,
+    marginTop: 15,
   },
 
-   registerText: {
-    textAlign: "center",
-    color: "gray",
-    marginTop: 25,
-  },
-
-  backText: {
+  signupButtonText: {
+    color: "#4CAF50",
     textAlign: "center",
     fontSize: 16,
-    color: "#555555",
+    fontWeight: "bold",
   },
 });
